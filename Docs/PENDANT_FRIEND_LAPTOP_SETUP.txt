@@ -1,0 +1,532 @@
+KRYPTON / DEVELOPMENT LAPTOP SETUP
+================================================
+
+Purpose
+-------
+This guide prepares a friend's Windows laptop for building, flashing, and editing the
+Open-Pendant firmware later.
+
+IMPORTANT:
+
+- This guide installs only the development environment and Nordic/Zephyr dependencies.
+- Use Windows 11 x64 if possible.
+- Recommended NCS version for this project: nRF Connect SDK v3.4.0.
+  v3.4.0 is an LTS release and is the version we are targeting for this setup.
+
+Official Nordic documentation:
+https://nrfconnectdocs.nordicsemi.com/ncs/latest/nrf/installation/install_ncs.html
+
+
+================================================
+1. SOFTWARE TO INSTALL
+================================================
+
+Install these in roughly this order:
+
+1) Windows Update
+2) Git for Windows
+3) Visual Studio Code
+4) nRF Connect for VS Code extension pack
+5) nRF Connect SDK v3.4.0
+6) Matching nRF Connect SDK toolchain for v3.4.0
+7) SEGGER J-Link software/USB driver
+8) Optional: nRF Connect for Desktop / Programmer if needed
+9) Optional: Python separately ONLY if a later project script needs system Python
+
+DO NOT manually install random versions of:
+- Zephyr
+- west
+- CMake
+- Ninja
+- GCC/ARM GCC
+- Python packages
+
+The Nordic nRF Connect SDK toolchain supplies the versions needed for NCS.
+This avoids version conflicts.
+
+
+================================================
+2. GIT
+================================================
+
+Download:
+https://git-scm.com/download/win
+
+Install using the normal/default options.
+
+After installation, open PowerShell and verify:
+
+git --version
+
+Expected:
+git version ...
+
+
+================================================
+3. VISUAL STUDIO CODE
+================================================
+
+Download:
+https://code.visualstudio.com/
+
+Install normally.
+
+Recommended VS Code options:
+- Add to PATH
+- Add "Open with Code" if offered
+- Register Code as an editor
+
+After installation, open VS Code.
+
+
+================================================
+4. nRF CONNECT FOR VS CODE
+================================================
+
+Inside VS Code:
+
+1. Open Extensions.
+2. Search:
+   nRF Connect for VS Code
+
+Install the official Nordic extension.
+
+The complete Nordic extension set includes:
+- nRF Connect for VS Code
+- nRF DeviceTree
+- nRF Kconfig
+- nRF Terminal
+
+Do NOT install random third-party Nordic/Zephyr extensions unless required.
+
+Official documentation:
+https://docs.nordicsemi.com/r/bundle/nrf-connect-vscode/page/get_started/install.html
+
+
+================================================
+5. INSTALL nRF CONNECT SDK v3.4.0
+================================================
+
+This is the MOST IMPORTANT STEP.
+
+Open the nRF Connect extension in VS Code.
+
+Use:
+
+Install SDK
+
+Then:
+
+SDK type:
+    nRF Connect SDK
+
+Version:
+    v3.4.0
+
+IMPORTANT:
+Choose the PRE-PACKAGED SDK + TOOLCHAIN option if it is available.
+This is preferable to manually assembling the toolchain.
+
+Suggested location:
+
+C:\ncs\v3.4.0
+
+or allow the Nordic installer/extension to choose its normal location.
+
+The SDK manager normally uses:
+C:\ncs\
+
+The installation may take a long time.
+
+
+================================================
+6. VERIFY THE SDK
+================================================
+
+Open a new PowerShell AFTER installation.
+
+Check:
+
+nrfutil --version
+
+Then:
+
+nrfutil sdk-manager list
+
+There should be an installation corresponding to:
+
+v3.4.0
+
+
+================================================
+7. TOOLCHAIN
+================================================
+
+The toolchain must match NCS v3.4.0.
+
+If the VS Code extension installed it automatically, DO NOT install another
+random ARM/Zephyr toolchain.
+
+Launch the v3.4.0 environment using Nordic's toolchain manager if necessary:
+
+nrfutil sdk-manager toolchain launch --ncs-version v3.4.0 --terminal
+
+A new terminal should open with the Nordic toolchain environment.
+
+Then verify:
+
+west --version
+
+python --version
+
+cmake --version
+
+ninja --version
+
+All of these should return versions rather than "command not found".
+
+
+================================================
+8. SEGGER J-LINK
+================================================
+
+Install the latest J-Link software recommended by Nordic.
+
+Official:
+https://www.segger.com/downloads/jlink/
+
+On Windows, install the J-Link software and USB driver when offered.
+
+Why:
+Nordic's VS Code tooling uses J-Link-related tooling for supported Nordic
+debug/programming workflows.
+
+NOTE:
+The XIAO nRF52840 Sense has its own USB bootloader, so a J-Link programmer
+is not necessarily required just to flash the XIAO. Still, installing the
+official J-Link package keeps the Nordic development environment complete.
+
+
+================================================
+9. nRF COMMAND LINE / DEVICE TOOLS
+================================================
+
+For NCS v3.4.0, nRF Util and the nrfutil device command are supplied by the
+NCS toolchain installation.
+
+Therefore:
+DO NOT install an old standalone nRF Command Line Tools package just because
+an old tutorial tells you to.
+
+If Nordic's VS Code extension reports a missing prerequisite, follow the
+version it specifically requests.
+
+Official prerequisite documentation:
+https://docs.nordicsemi.com/r/bundle/nrf-connect-vscode/page/get_started/install.html/extension-prerequisites
+
+
+================================================
+10. PYTHON
+================================================
+
+For the NCS firmware build environment:
+
+DO NOT install Python packages globally unless necessary.
+
+The NCS toolchain provides the Python environment/dependencies required by
+the SDK.
+
+If a later Open-Pendant script specifically requires a separate Python
+installation, use Python 3.x and preferably a virtual environment.
+
+For now, the test is simply:
+
+python --version
+
+If Python is found inside the Nordic toolchain environment, that is good.
+
+
+================================================
+11. WEST
+================================================
+
+west is the Zephyr/NCS multi-repository management tool.
+
+DO NOT clone Zephyr manually.
+
+DO NOT install a random west version globally.
+
+The NCS toolchain provides the correct west environment.
+
+Verify:
+
+west --version
+
+Later, when the actual NCS workspace is initialized, west will automatically
+retrieve the repositories defined by the NCS manifest.
+
+
+================================================
+12. NCS / ZEPHYR REPOSITORIES
+================================================
+
+DO NOT manually download these repositories one by one.
+
+The NCS manifest + west handles them.
+
+The workspace will contain repositories/components such as:
+
+- sdk-nrf
+- zephyr
+- nrfxlib
+- mcuboot
+- hal_nordic
+- CMSIS-related components
+- other NCS/Zephyr modules required by the selected release
+
+This is important because the exact revisions must match the NCS release.
+
+The correct workflow is:
+
+NCS manifest
+    |
+    v
+west update
+    |
+    +--> sdk-nrf
+    +--> zephyr
+    +--> nrfxlib
+    +--> mcuboot
+    +--> HALs/modules
+    +--> other dependencies
+
+Do NOT independently download "latest Zephyr" or "latest nrfxlib".
+
+
+================================================
+13. IMPORTANT: DO NOT CLONE OPEN-PENDANT YET
+================================================
+
+STOP HERE.
+
+At this point the friend's laptop should have:
+
+[ ] Git
+[ ] VS Code
+[ ] nRF Connect for VS Code
+[ ] NCS v3.4.0
+[ ] Matching NCS v3.4.0 toolchain
+[ ] Python available in NCS environment
+[ ] west
+[ ] CMake
+[ ] Ninja
+[ ] SEGGER J-Link
+[ ] Nordic USB/device tooling
+
+DO NOT clone:
+
+https://github.com/adirsingh96/open-pendant
+
+We will bring the project separately later.
+
+
+================================================
+14. BASIC TEST WITHOUT OPEN-PENDANT
+================================================
+
+Before I leave the laptop, test the Nordic environment.
+
+Open the Nordic NCS terminal.
+
+Run:
+
+nrfutil --version
+
+west --version
+
+python --version
+
+cmake --version
+
+ninja --version
+
+Then check the SDK installation.
+
+Run:
+
+nrfutil sdk-manager list
+
+Make sure v3.4.0 is present.
+
+
+================================================
+15. TEST A GENERIC NCS SAMPLE
+================================================
+
+This is optional but HIGHLY recommended.
+
+The goal is to prove that the computer can:
+
+1. Find the SDK
+2. Run west
+3. Run CMake
+4. Compile ARM firmware
+5. Recognize the XIAO nRF52840 later
+
+DO NOT use the Open-Pendant project for this first test.
+
+Use a Nordic/Zephyr sample from the installed NCS workspace.
+
+The exact sample path can be selected after the NCS installation is confirmed.
+
+
+================================================
+16. HARDWARE TO BRING LATER
+================================================
+
+For the actual project, we currently have:
+
+- Seeed Studio XIAO nRF52840 Sense
+- Tactile button
+- Vibration motor
+- Battery
+- Supporting components
+
+For initial firmware testing, the XIAO can be connected over USB.
+
+Do NOT connect a LiPo battery while troubleshooting USB firmware unless the
+power arrangement is understood.
+
+For the first software test:
+USB -> XIAO
+
+
+================================================
+17. WHEN I COME BACK
+================================================
+
+Only after ALL checks above pass:
+
+1. Connect the XIAO nRF52840 Sense.
+2. Verify Windows detects it.
+3. Verify the USB/serial device.
+4. Then bring the Open-Pendant project.
+5. Open it in VS Code.
+6. Point the project to NCS v3.4.0.
+7. Build the original firmware WITHOUT changing anything.
+8. Flash it.
+9. Test the original firmware.
+10. Only after the baseline works, start modifying the code.
+
+RULE:
+FIRST MAKE IT BUILD.
+THEN MAKE IT FLASH.
+THEN MAKE IT WORK.
+THEN MODIFY IT.
+
+This prevents us from debugging our modifications and the environment at the
+same time.
+
+
+================================================
+18. USEFUL OFFICIAL LINKS
+================================================
+
+Visual Studio Code:
+https://code.visualstudio.com/
+
+Git for Windows:
+https://git-scm.com/download/win
+
+Nordic NCS installation:
+https://nrfconnectdocs.nordicsemi.com/ncs/latest/nrf/installation/install_ncs.html
+
+Nordic nRF Connect for VS Code:
+https://docs.nordicsemi.com/r/bundle/nrf-connect-vscode/page/get_started/install.html
+
+Nordic SDK/toolchain first setup:
+https://docs.nordicsemi.com/r/bundle/nrf-connect-vscode/page/get_started/quick_setup.html/installing-sdk-and-toolchain-for-the-first-time
+
+SEGGER J-Link:
+https://www.segger.com/downloads/jlink/
+
+Nordic SDK source/manifest:
+https://github.com/nrfconnect/sdk-nrf
+
+Zephyr:
+https://github.com/zephyrproject-rtos/zephyr
+
+nrfxlib:
+https://github.com/nrfconnect/nrfxlib
+
+MCUboot:
+https://github.com/mcu-tools/mcuboot
+
+
+================================================
+19. FINAL CHECKLIST FOR MY FRIEND
+================================================
+
+[ ] Windows updated
+[ ] Git installed
+[ ] VS Code installed
+[ ] nRF Connect for VS Code installed
+[ ] NCS v3.4.0 installed
+[ ] Matching v3.4.0 toolchain installed
+[ ] J-Link installed
+[ ] nrfutil works
+[ ] west works
+[ ] Python works
+[ ] CMake works
+[ ] Ninja works
+[ ] NCS v3.4.0 appears in SDK Manager
+[ ] Generic NCS sample environment tested
+[ ] XIAO USB detection tested if board is available
+
+IMPORTANT:
+[ ] OPEN-PENDANT REPOSITORY NOT CLONED
+
+When all boxes are checked, stop.
+Do not start changing SDK versions.
+Do not install random Zephyr versions.
+Do not install another ARM toolchain.
+Do not run random tutorials using different NCS versions.
+
+The machine is now ready for the actual Open-Pendant project.
+
+
+================================================
+20. TROUBLESHOOTING RULE
+================================================
+
+If something fails, DO NOT randomly reinstall everything.
+
+Send me:
+1. The exact command you ran
+2. The complete error
+3. The output of:
+
+nrfutil --version
+west --version
+python --version
+cmake --version
+ninja --version
+nrfutil sdk-manager list
+
+Also tell me:
+- Windows version
+- Whether the XIAO is connected
+- The COM port shown by Windows
+
+Then we fix the exact problem.
+
+
+END OF SETUP GUIDE
+==================
+
+Reference:
+Nordic Semiconductor's current NCS documentation recommends the VS Code
+workflow and provides the SDK/toolchain as a matched environment. NCS releases
+are composed of multiple Git repositories managed together by west, so the
+dependencies should be obtained through the NCS manifest rather than manually
+mixing repository versions.
