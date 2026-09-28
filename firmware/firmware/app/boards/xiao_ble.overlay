@@ -1,0 +1,20 @@
+/*
+ * boards/xiao_ble.overlay
+ *
+ * Device-tree overlay for Seeed XIAO nRF52840 (xiao_ble).
+ * Configures physical button on D0 (P0.02) with internal pull-up and wake-up capability.
+ */
+
+/ {
+	aliases {
+		sw0 = &button0;
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio0 2 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "User Button D0";
+		};
+	};
+};

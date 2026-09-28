@@ -1,0 +1,7 @@
+rep_number,load_kg,mean_concentric_vel_mps,peak_concentric_vel_mps,duration_ms,concentric_duration_ms,displacement_m,data_quality
+1,200.0,0.940,1.377,3424.0,3273.0,2.851,NOISY
+2,200.0,0.641,1.017,2472.0,2032.0,1.136,CLEAN
+3,200.0,0.192,0.278,1331.0,1081.0,0.405,NOISY
+4,200.0,0.119,0.272,2042.0,1992.0,0.429,NOISY
+5,200.0,0.687,1.752,951.0,871.0,0.530,NOISY
+6,150.0,0.677,1.116,1832.0,1772.0,4.059,NOISY

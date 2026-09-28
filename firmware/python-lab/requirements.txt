@@ -1,0 +1,5 @@
+bleak>=0.21
+matplotlib>=3.7
+numpy>=1.24
+scipy>=1.10
+windows-curses>=2.4.0; sys_platform == 'win32'

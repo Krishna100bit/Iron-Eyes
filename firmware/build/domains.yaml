@@ -1,0 +1,7 @@
+default: app
+build_dir: C:/SIH/build
+domains:
+  - name: app
+    build_dir: C:/SIH/build/app
+flash_order:
+  - app

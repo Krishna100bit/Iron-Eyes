@@ -1,0 +1,56 @@
+cmake:
+  application:
+    configuration-dir: 'C:/SIH/firmware/app'
+    source-dir: 'C:/SIH/firmware/app'
+  board:
+    name: 'xiao_ble'
+    path:
+     - 'C:/ncs/v3.4.0/zephyr/boards/seeed/xiao_ble'
+    qualifiers: 'nrf52840/sense'
+    revision: ''
+  devicetree:
+    bindings-dirs:
+     - 'C:/ncs/v3.4.0/nrf/dts/bindings'
+     - 'C:/ncs/v3.4.0/zephyr/dts/bindings'
+    files:
+     - 'C:/ncs/v3.4.0/zephyr/boards/seeed/xiao_ble/xiao_ble_nrf52840_sense.dts'
+     - 'C:/SIH/firmware/app/boards/xiao_ble_nrf52840_sense.overlay'
+    include-dirs:
+     - 'C:/ncs/v3.4.0/nrf/include'
+     - 'C:/ncs/v3.4.0/nrf/dts/common'
+     - 'C:/ncs/v3.4.0/nrf/dts/riscv'
+     - 'C:/ncs/v3.4.0/nrf/dts/arm'
+     - 'C:/ncs/v3.4.0/nrf/dts'
+     - 'C:/ncs/v3.4.0/zephyr/include'
+     - 'C:/ncs/v3.4.0/zephyr/include/zephyr'
+     - 'C:/ncs/v3.4.0/zephyr/dts/common'
+     - 'C:/ncs/v3.4.0/zephyr/dts/vendor'
+     - 'C:/ncs/v3.4.0/zephyr/dts/rx'
+     - 'C:/ncs/v3.4.0/zephyr/dts/x86'
+     - 'C:/ncs/v3.4.0/zephyr/dts/xtensa'
+     - 'C:/ncs/v3.4.0/zephyr/dts/sparc'
+     - 'C:/ncs/v3.4.0/zephyr/dts/riscv'
+     - 'C:/ncs/v3.4.0/zephyr/dts/posix'
+     - 'C:/ncs/v3.4.0/zephyr/dts/arm64'
+     - 'C:/ncs/v3.4.0/zephyr/dts/arm'
+     - 'C:/ncs/v3.4.0/zephyr/dts/arc'
+     - 'C:/ncs/v3.4.0/zephyr/dts'
+    user-files:
+     - 'C:/SIH/firmware/app/boards/xiao_ble_nrf52840_sense.overlay'
+  kconfig:
+    files:
+     - 'C:/ncs/v3.4.0/zephyr/boards/seeed/xiao_ble/xiao_ble_nrf52840_sense_defconfig'
+     - 'C:/SIH/firmware/app/prj.conf'
+     - 'C:/SIH/build/app/zephyr/.config.sysbuild'
+    user-files:
+     - 'C:/SIH/firmware/app/prj.conf'
+  toolchain:
+    name: 'zephyr'
+    path: 'C:/ncs/toolchains/dcbdc366a1/opt/zephyr-sdk'
+  vendor-specific:
+    nordic:
+      svdfile: 'C:/ncs/v3.4.0/modules/hal/nordic/nrfx/bsp/stable/mdk/nrf52840.svd'
+  zephyr:
+    version: '4.4.0'
+    zephyr-base: 'C:/ncs/v3.4.0/zephyr'
+version: '0.1.0'

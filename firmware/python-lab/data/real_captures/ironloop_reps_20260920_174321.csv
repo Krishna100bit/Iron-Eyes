@@ -1,0 +1,6 @@
+rep_number,load_kg,mean_concentric_vel_mps,peak_concentric_vel_mps,duration_ms,concentric_duration_ms,displacement_m,data_quality
+1,120.0,0.148,0.300,13067.0,6623.0,34.352,PACKET_LOSS
+2,120.0,1.065,1.977,671.0,510.0,0.373,NOISY
+3,120.0,0.144,0.295,6593.0,2753.0,0.409,CLEAN
+4,120.0,1.067,1.980,671.0,510.0,0.373,NOISY
+5,120.0,0.675,1.341,1471.0,1291.0,0.742,NOISY

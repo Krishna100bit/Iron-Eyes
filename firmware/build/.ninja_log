@@ -1,0 +1,19 @@
+# ninja log v7
+39	137	8116313818075423	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-mkdir	637d7bd95e1ac17a
+39	137	8116313818075423	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-mkdir	637d7bd95e1ac17a
+137	278	8116313819475808	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-download	400cc7b232ca219d
+137	278	8116313819475808	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-download	400cc7b232ca219d
+278	353	8116313820233106	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-update	82276b3e8ea335c5
+278	353	8116313820233106	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-update	82276b3e8ea335c5
+353	429	8116313820999186	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-patch	55842a0e854aa9cf
+353	429	8116313820999186	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-patch	55842a0e854aa9cf
+429	506	8116313821763578	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-configure	a16c544446791b15
+429	506	8116313821763578	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-configure	a16c544446791b15
+506	11198	8116313821840290	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-build	e87ea9193d6ae1c
+506	11198	8116313821840290	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-build	e87ea9193d6ae1c
+11198	11266	8116313928760325	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-install	156a57a2db72c654
+11198	11266	8116313928760325	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-install	156a57a2db72c654
+11266	11479	8116313931484069	_sysbuild/sysbuild/images/CMakeFiles/app-complete	e265dc22d89c1402
+11266	11479	8116313931484069	_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-done	e265dc22d89c1402
+11266	11479	8116313931484069	C:/SIH/build/_sysbuild/sysbuild/images/CMakeFiles/app-complete	e265dc22d89c1402
+11266	11479	8116313931484069	C:/SIH/build/_sysbuild/sysbuild/images/app-prefix/src/app-stamp/app-done	e265dc22d89c1402
