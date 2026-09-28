@@ -2,13 +2,6 @@ import 'dart:math';
 
 /// Mahony complementary filter for IMU orientation estimation.
 ///
-/// Architecture decision (from 02_ARCHITECTURE.md):
-/// "Complementary filter, not full Kalman — barbell reps are short (1-4s),
-/// high-jerk; a well-tuned complementary filter is sufficient and far easier
-/// to debug under time pressure."
-///
-/// Implementation follows the standard Mahony formulation with proportional
-/// + integral correction from the accelerometer.
 class OrientationFilter {
   // Mahony gains — Kp drives fast correction, Ki prevents gyro bias drift
   static const double _kp = 2.0;
@@ -25,8 +18,6 @@ class OrientationFilter {
 
   bool _calibrated = false;
   bool get isCalibrated => _calibrated;
-
-  // ── Calibration ───────────────────────────────────────────────────────────
 
   /// Call this with N stationary samples captured during the CALIBRATE command.
   /// Computes gyro bias and initial orientation from gravity direction.
@@ -71,7 +62,13 @@ class OrientationFilter {
     _q3 = -sr * sp;
   }
 
-  // ── Filter Update ─────────────────────────────────────────────────────────
+  bool _autoAligned = false;
+  final List<double> _initAx = [];
+  final List<double> _initAy = [];
+  final List<double> _initAz = [];
+  final List<double> _initGx = [];
+  final List<double> _initGy = [];
+  final List<double> _initGz = [];
 
   /// Process one IMU sample. Call at the sample rate (dt in seconds).
   void update({
@@ -83,6 +80,32 @@ class OrientationFilter {
     required double az,
     required double dt,
   }) {
+    // If not manually calibrated, auto-align to the gravity vector during first resting samples
+    if (!_calibrated && !_autoAligned) {
+      final aNorm = sqrt(ax * ax + ay * ay + az * az);
+      if (aNorm > 8.0 && aNorm < 11.5) {
+        _initAx.add(ax);
+        _initAy.add(ay);
+        _initAz.add(az);
+        _initGx.add(gx);
+        _initGy.add(gy);
+        _initGz.add(gz);
+
+        if (_initAx.length >= 20) {
+          final avgAx = _initAx.reduce((a, b) => a + b) / _initAx.length;
+          final avgAy = _initAy.reduce((a, b) => a + b) / _initAy.length;
+          final avgAz = _initAz.reduce((a, b) => a + b) / _initAz.length;
+
+          _gyroBiasX = _initGx.reduce((a, b) => a + b) / _initGx.length;
+          _gyroBiasY = _initGy.reduce((a, b) => a + b) / _initGy.length;
+          _gyroBiasZ = _initGz.reduce((a, b) => a + b) / _initGz.length;
+
+          _initFromAccel(avgAx, avgAy, avgAz);
+          _autoAligned = true;
+        }
+      }
+    }
+
     // Remove gyro bias
     gx -= _gyroBiasX;
     gy -= _gyroBiasY;
@@ -132,8 +155,6 @@ class OrientationFilter {
     _q2 = q2 * norm;
     _q3 = q3 * norm;
   }
-
-  // ── World-Frame Projection ─────────────────────────────────────────────────
 
   /// Returns the vertical (world Z) component of the acceleration vector [ax,ay,az]
   /// expressed in body frame. This is the only axis needed for barbell rep detection.

@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/workout_session.dart';
+import '../models/rep_card.dart';
+import '../database/db_helper.dart';
 import '../database/dao/athlete_dao.dart';
 import '../database/dao/session_dao.dart';
 import '../database/dao/set_dao.dart';
 import '../database/dao/rep_dao.dart';
-
-// ── State ─────────────────────────────────────────────────────────────────────
 class WorkoutHistoryState {
   final List<WorkoutSession> sessions;
   final int totalWorkouts;
@@ -30,6 +30,27 @@ class WorkoutHistoryState {
   List<WorkoutSession> get recentSessions =>
       sessions.length > 10 ? sessions.sublist(0, 10) : sessions;
 
+  double get maxE1rm {
+    double max = 0.0;
+    for (var s in sessions) {
+      if (s.loadKg != null && s.totalReps > 0) {
+        final e = s.loadKg! * (1 + 0.0333 * s.totalReps);
+        if (e > max) max = e;
+      }
+    }
+    return max;
+  }
+
+  double get totalVolume {
+    double vol = 0.0;
+    for (var s in sessions) {
+      if (s.loadKg != null) {
+        vol += s.loadKg! * s.totalReps;
+      }
+    }
+    return vol;
+  }
+
   String get avgFormGrade {
     if (sessions.isEmpty) return '—';
     final avg = sessions
@@ -43,8 +64,6 @@ class WorkoutHistoryState {
     return 'F';
   }
 }
-
-// ── Notifier ──────────────────────────────────────────────────────────────────
 class WorkoutHistoryNotifier extends StateNotifier<WorkoutHistoryState> {
   final _athleteDao = AthleteDao();
   final _sessionDao = SessionDao();
@@ -65,7 +84,12 @@ class WorkoutHistoryNotifier extends StateNotifier<WorkoutHistoryState> {
   Future<void> _loadFromDb(int athleteId) async {
     // 1. Session summaries list
     final summaryRows = await _sessionDao.getSessionSummaries(athleteId);
-    final sessions = summaryRows.map(_rowToSession).toList();
+    final sessions = <WorkoutSession>[];
+    for (final row in summaryRows) {
+      final sessionId = row['id'] as int;
+      final repsData = await _repDao.getRepsForSession(sessionId);
+      sessions.add(_rowToSession(row, repsData));
+    }
 
     // 2. Lifetime totals
     final totals = await _sessionDao.getLifetimeTotals(athleteId);
@@ -119,7 +143,19 @@ class WorkoutHistoryNotifier extends StateNotifier<WorkoutHistoryState> {
     );
   }
 
-  WorkoutSession _rowToSession(Map<String, dynamic> row) {
+  WorkoutSession _rowToSession(Map<String, dynamic> row, List<Map<String, dynamic>> repsData) {
+    final List<RepCard> parsedReps = repsData.map((r) {
+      return RepCard(
+        repNumber: (r['rep_index'] as int?) ?? 1,
+        formScore: (r['form_score'] as int?) ?? 0,
+        peakVelocity: (r['peak_velocity'] as num?)?.toDouble(),
+        avgVelocity: (r['mean_concentric_velocity'] as num?)?.toDouble(),
+        romMm: r['displacement_m'] != null ? ((r['displacement_m'] as num) * 1000).toInt() : null,
+        flags: [],
+        timestamp: r['timestamp'] != null ? DateTime.parse(r['timestamp'] as String) : DateTime.now(),
+      );
+    }).toList();
+
     return WorkoutSession(
       id: row['id'].toString(),
       exercise: row['exercise'] as String? ?? '',
@@ -129,7 +165,8 @@ class WorkoutHistoryNotifier extends StateNotifier<WorkoutHistoryState> {
       avgFormScore: ((row['avg_form_score'] as num?)?.toInt()) ?? 0,
       durationSeconds: ((row['duration_seconds'] as num?)?.toInt()) ?? 0,
       loadKg: (row['load_kg'] as num?)?.toDouble(),
-      reps: const [],
+      targetRpe: (row['target_rpe'] as num?)?.toDouble(),
+      reps: parsedReps,
     );
   }
 
@@ -196,6 +233,21 @@ class WorkoutHistoryNotifier extends StateNotifier<WorkoutHistoryState> {
 
     // Refresh state from DB
     await _loadFromDb(athleteId);
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    final db = await DbHelper.instance.db;
+    // Get all workout sets for this session to delete their reps
+    final sets = await db.query('WORKOUT_SET', where: 'session_id = ?', whereArgs: [int.parse(sessionId)]);
+    for (final s in sets) {
+      await db.delete('REP', where: 'set_id = ?', whereArgs: [s['id']]);
+    }
+    // Delete sets
+    await db.delete('WORKOUT_SET', where: 'session_id = ?', whereArgs: [int.parse(sessionId)]);
+    // Delete session
+    await db.delete('SESSION', where: 'id = ?', whereArgs: [int.parse(sessionId)]);
+    
+    _refresh();
   }
 }
 

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
-
-// Same exercise list (shared data)
 final List<Map<String, dynamic>> _allExercises = [
   {'name': 'Squat', 'group': 'Lower Body', 'type': 'Barbell', 'muscles': 'Quads, Glutes, Hamstrings', 'icon': Icons.accessibility_new_rounded},
   {'name': 'Deadlift', 'group': 'Lower Body', 'type': 'Barbell', 'muscles': 'Hamstrings, Glutes, Lower Back', 'icon': Icons.fitness_center},

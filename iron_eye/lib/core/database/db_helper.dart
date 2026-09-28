@@ -2,9 +2,6 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 /// Single source of truth for the SQLite database.
-/// All tables match the schema in 02_ARCHITECTURE.md exactly, extended
-/// with the onboarding fields (age, height_cm, gender, goal) that the
-/// architecture left as "extend as needed."
 class DbHelper {
   DbHelper._();
   static final DbHelper instance = DbHelper._();
@@ -27,7 +24,6 @@ class DbHelper {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // ── ATHLETE ──────────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE ATHLETE (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,8 +40,6 @@ class DbHelper {
         created_at      TEXT    NOT NULL
       )
     ''');
-
-    // ── DEVICE ───────────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE DEVICE (
         id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,8 +48,6 @@ class DbHelper {
         last_seen        TEXT
       )
     ''');
-
-    // ── SESSION ───────────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE SESSION (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,8 +58,6 @@ class DbHelper {
         FOREIGN KEY (athlete_id) REFERENCES ATHLETE(id)
       )
     ''');
-
-    // ── WORKOUT_SET ───────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE WORKOUT_SET (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,8 +69,6 @@ class DbHelper {
         FOREIGN KEY (session_id) REFERENCES SESSION(id)
       )
     ''');
-
-    // ── REP ───────────────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE REP (
         id                       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,8 +85,6 @@ class DbHelper {
         FOREIGN KEY (set_id) REFERENCES WORKOUT_SET(id)
       )
     ''');
-
-    // ── E1RM_ESTIMATE ─────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE E1RM_ESTIMATE (
         id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,8 +98,6 @@ class DbHelper {
         FOREIGN KEY (athlete_id) REFERENCES ATHLETE(id)
       )
     ''');
-
-    // ── DEVICE_LOG ────────────────────────────────────────────────────────────
     await db.execute('''
       CREATE TABLE DEVICE_LOG (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,

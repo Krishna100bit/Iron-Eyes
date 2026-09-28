@@ -393,8 +393,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-
-
   Widget _buildDangerZone(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -473,8 +471,6 @@ class ProfileScreen extends ConsumerWidget {
     return '$n';
   }
 }
-
-// ─── Supporting Widgets ───────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
   final String label;

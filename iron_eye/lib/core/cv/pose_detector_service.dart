@@ -13,15 +13,22 @@ class PoseDetectorService {
   );
 
   bool _isBusy = false;
+  Size? _lastImageSize;
+  Size? get lastImageSize => _lastImageSize;
 
-  Future<List<Pose>> processCameraImage(CameraImage image, int sensorOrientation, CameraLensDirection lensDirection) async {
-    if (_isBusy) return [];
+  Future<List<Pose>?> processCameraImage(
+    CameraImage image,
+    int sensorOrientation,
+    CameraLensDirection lensDirection,
+  ) async {
+    if (_isBusy) return null;
     _isBusy = true;
+    _lastImageSize = Size(image.width.toDouble(), image.height.toDouble());
 
     final inputImage = _inputImageFromCameraImage(image, sensorOrientation, lensDirection);
     if (inputImage == null) {
       _isBusy = false;
-      return [];
+      return null;
     }
 
     try {
@@ -30,12 +37,11 @@ class PoseDetectorService {
       return poses;
     } catch (e) {
       _isBusy = false;
-      return [];
+      return null;
     }
   }
 
   InputImage? _inputImageFromCameraImage(CameraImage image, int sensorOrientation, CameraLensDirection lensDirection) {
-    // Writeable bytes buffer across planes for Android NV21
     final WriteBuffer allBytes = WriteBuffer();
     for (final Plane plane in image.planes) {
       allBytes.putUint8List(plane.bytes);

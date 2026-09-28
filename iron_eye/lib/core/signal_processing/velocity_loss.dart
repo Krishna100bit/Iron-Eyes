@@ -1,4 +1,3 @@
-/// Velocity Loss (VL%) calculator — from 02_ARCHITECTURE.md Part I.
 ///
 /// VL% = (v_reference - v_current) / v_reference × 100
 ///
@@ -8,8 +7,7 @@
 class VelocityLoss {
   static const int minRepsRequired = 3;
 
-  // Configurable stop thresholds (from 02_ARCHITECTURE.md — user-adjustable sliders)
-  // Labelled as training strategies, never as medical thresholds
+    // Labelled as training strategies, never as medical thresholds
   static const Map<String, double> thresholds = {
     'Conservative': 10.0, // ~10% VL → stop
     'Moderate': 20.0, // ~20% VL → stop

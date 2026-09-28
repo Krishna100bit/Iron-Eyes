@@ -68,7 +68,8 @@ class SessionDao {
         COALESCE(AVG(r.form_score), 0) AS avg_form_score,
         (strftime('%s', MAX(r.timestamp)) - strftime('%s', MIN(r.timestamp)))
                                        AS duration_seconds,
-        MAX(ws.load_kg)                AS load_kg
+        MAX(ws.load_kg)                AS load_kg,
+        MAX(ws.target_rpe)             AS target_rpe
       FROM SESSION s
       LEFT JOIN WORKOUT_SET ws ON ws.session_id = s.id
       LEFT JOIN REP r          ON r.set_id = ws.id

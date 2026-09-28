@@ -8,6 +8,7 @@ import '../../../core/providers/workout_history_provider.dart';
 import '../../../core/models/workout_session.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../main.dart';
+import '../../camera_workout/view/workout_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -51,7 +52,6 @@ class DashboardScreen extends ConsumerWidget {
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // ── Header ──────────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -97,8 +97,6 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-                // ── Streak row ───────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -116,8 +114,6 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-                // ── Day circles (separate row, always fits) ──────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
@@ -130,33 +126,36 @@ class DashboardScreen extends ConsumerWidget {
                         final hadWorkout = history.sessions.any((s) =>
                             DateTime(s.date.year, s.date.month, s.date.day) == day);
                         final isToday = i == today;
-                        return Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: hadWorkout
-                                ? AppTheme.primary
-                                : isToday
-                                    ? Colors.white.withOpacity(0.1)
-                                    : Colors.transparent,
-                            border: Border.all(
-                              color: isToday && !hadWorkout
-                                  ? Colors.white54
-                                  : hadWorkout
-                                      ? AppTheme.primary
-                                      : Colors.white.withOpacity(0.12),
-                              width: 1,
+                        return GestureDetector(
+                          onTap: () => _showDaySummary(context, day, history.sessions),
+                          child: Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: hadWorkout
+                                  ? AppTheme.primary
+                                  : isToday
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.transparent,
+                              border: Border.all(
+                                color: isToday && !hadWorkout
+                                    ? Colors.white54
+                                    : hadWorkout
+                                        ? AppTheme.primary
+                                        : Colors.white.withValues(alpha: 0.12),
+                                width: 1,
+                              ),
                             ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              ['S', 'M', 'T', 'W', 'T', 'F', 'S'][i],
-                              style: GoogleFonts.outfit(
-                                color: hadWorkout
-                                    ? Colors.black
-                                    : isToday ? Colors.white : Colors.white38,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                            child: Center(
+                              child: Text(
+                                ['S', 'M', 'T', 'W', 'T', 'F', 'S'][i],
+                                style: GoogleFonts.outfit(
+                                  color: hadWorkout
+                                      ? Colors.black
+                                      : isToday ? Colors.white : Colors.white38,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -165,8 +164,6 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-                // ── Stats glass cards ────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
@@ -200,8 +197,38 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-                // ── Quick Start button ───────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: Row(
+                      children: [
+                        Expanded(child: _StatCard(
+                          emoji: '💪',
+                          label: 'MAX E1RM',
+                          value: history.maxE1rm > 0 ? history.maxE1rm.toStringAsFixed(1) : '—',
+                          unit: 'kg',
+                          valueColor: const Color(0xFFC77DFF),
+                        )),
+                        const SizedBox(width: 8),
+                        Expanded(child: _StatCard(
+                          emoji: '📦',
+                          label: 'VOLUME',
+                          value: history.totalVolume > 0 ? (history.totalVolume >= 1000 ? '${(history.totalVolume/1000).toStringAsFixed(1)}k' : history.totalVolume.toStringAsFixed(0)) : '—',
+                          unit: 'kg',
+                          valueColor: const Color(0xFF00E5FF),
+                        )),
+                        const SizedBox(width: 8),
+                        Expanded(child: _StatCard(
+                          emoji: '🏋️',
+                          label: 'SESSIONS',
+                          value: '${history.totalWorkouts}',
+                          unit: 'total',
+                          valueColor: Colors.white70,
+                        )),
+                      ],
+                    ),
+                  ),
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -250,8 +277,6 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-                // ── Weekly Activity chart ────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
@@ -372,8 +397,6 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-                // ── Recent Workouts ──────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
@@ -440,6 +463,60 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+  void _showDaySummary(BuildContext context, DateTime date, List<WorkoutSession> sessions) {
+    final daySessions = sessions.where((s) => 
+        DateTime(s.date.year, s.date.month, s.date.day) == date).toList();
+
+    final dateLabel = '${date.day}/${date.month}/${date.year}';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF111111),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Workouts on $dateLabel',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (daySessions.isEmpty)
+                Text('No workouts recorded on this day.', style: GoogleFonts.outfit(color: Colors.white54))
+              else
+                ...daySessions.map((s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _SessionCard(session: s),
+                )),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SessionCard extends StatelessWidget {
@@ -456,68 +533,119 @@ class _SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      blur: 10,
-      opacity: 0.07,
-      borderColor: Colors.white.withOpacity(0.07),
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 44, height: 44,
+    return Consumer(
+      builder: (context, ref, child) {
+        return Dismissible(
+          key: Key(session.id.toString()),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+              color: Colors.redAccent.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.fitness_center,
-                color: AppTheme.primary, size: 20),
+            child: const Icon(Icons.delete_outline, color: Colors.white),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(session.exercise,
-                    style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-                Text('${session.totalReps} reps  ·  ${session.formattedDuration}',
-                    style: GoogleFonts.outfit(
-                        color: Colors.white38, fontSize: 12)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _gradeColor(session.avgFormGrade).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: _gradeColor(session.avgFormGrade).withOpacity(0.3)),
-                ),
-                child: Text(session.avgFormGrade,
-                    style: GoogleFonts.outfit(
-                        color: _gradeColor(session.avgFormGrade),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold)),
+          confirmDismiss: (_) async {
+            return await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1A1A1A),
+                title: Text('Delete Session?', style: GoogleFonts.outfit(color: Colors.white)),
+                content: Text('Remove this session and all its reps?',
+                    style: GoogleFonts.outfit(color: Colors.white70)),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Delete', style: TextStyle(color: Colors.redAccent))),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(session.timeAgo,
-                  style: GoogleFonts.outfit(color: Colors.white24, fontSize: 10)),
-            ],
+            );
+          },
+          onDismissed: (_) {
+            ref.read(workoutHistoryProvider.notifier).deleteSession(session.id.toString());
+          },
+          child: GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => SessionSummarySheet(session: session),
+              );
+            },
+            child: GlassContainer(
+              blur: 10,
+              opacity: 0.07,
+              borderColor: Colors.white.withValues(alpha: 0.07),
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: const Icon(Icons.fitness_center, color: AppTheme.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(session.exercise,
+                            style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600)),
+                        Text(
+                          '${session.totalReps} reps'
+                          '${session.loadKg != null ? '  ·  ${session.loadKg} kg' : ''}'
+                          '${session.targetRpe != null ? '  ·  RPE ${session.targetRpe}' : ''}'
+                          '  ·  ${session.formattedDuration}',
+                          style: GoogleFonts.outfit(color: Colors.white38, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _gradeColor(session.avgFormGrade).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: _gradeColor(session.avgFormGrade).withValues(alpha: 0.3)),
+                        ),
+                        child: Text(session.avgFormGrade,
+                            style: GoogleFonts.outfit(
+                                color: _gradeColor(session.avgFormGrade),
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(session.timeAgo,
+                          style: GoogleFonts.outfit(color: Colors.white24, fontSize: 10)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
-
-// ── _StatCard — compact glass stat card with FittedBox for overflow safety ───
 class _StatCard extends StatelessWidget {
   final String emoji;
   final String label;

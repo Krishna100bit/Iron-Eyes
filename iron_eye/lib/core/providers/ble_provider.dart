@@ -4,24 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/imu_sample.dart';
 import '../ble/ble_packet_parser.dart';
-
-// ── IronLoop GATT UUIDs ───────────────────────────────────────────────────────
-// These are placeholder UUIDs matching 02_ARCHITECTURE.md — update when firmware
-// team finalises the 128-bit base.
-const _serviceUuid = '0000a000-0000-1000-8000-00805f9b34fb';
-const _streamCharUuid = '0000a001-0000-1000-8000-00805f9b34fb';
-const _commandCharUuid = '0000a002-0000-1000-8000-00805f9b34fb';
-
-
-// ── BLE Commands ──────────────────────────────────────────────────────────────
+const _serviceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const _streamCharUuid = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+const _commandCharUuid = 'beb5483f-36e1-4688-b7f5-ea07361b26a8';
+const _statusCharUuid = 'beb54840-36e1-4688-b7f5-ea07361b26a8';
 class BleCmd {
   static const startSession = [0x01];
   static const stopSession = [0x02];
   static const calibrate = [0x03];
   static const ping = [0x05];
 }
-
-// ── Connection State ──────────────────────────────────────────────────────────
 enum BleConnectionState { disconnected, scanning, connecting, connected, streaming }
 
 class BleState {
@@ -47,7 +39,6 @@ class BleState {
 
   int get batteryPercent {
     if (batteryMv <= 0) return 0;
-    // Typical LiPo: 4200 mv = 100%, 3300 mv = 0%
     return ((batteryMv - 3300) / (4200 - 3300) * 100).clamp(0, 100).round();
   }
 
@@ -78,8 +69,6 @@ class BleState {
         scanResults: scanResults ?? this.scanResults,
       );
 }
-
-// ── BLE Notifier ──────────────────────────────────────────────────────────────
 class BleNotifier extends StateNotifier<BleState> {
   BleNotifier() : super(const BleState()) {
     _listenToAdapterState();
@@ -105,8 +94,6 @@ class BleNotifier extends StateNotifier<BleState> {
       }
     });
   }
-
-  // ── Scanning ──────────────────────────────────────────────────────────────
 
   Future<void> startScan() async {
     if (state.isScanning) return;
@@ -152,8 +139,6 @@ class BleNotifier extends StateNotifier<BleState> {
       state = state.copyWith(connection: BleConnectionState.disconnected);
     }
   }
-
-  // ── Connection ────────────────────────────────────────────────────────────
 
   Future<void> connect(ScanResult result) async {
     await stopScan();
@@ -235,8 +220,6 @@ class BleNotifier extends StateNotifier<BleState> {
     }
   }
 
-  // ── Commands ──────────────────────────────────────────────────────────────
-
   Future<void> sendCommand(List<int> cmd) async {
     if (_commandChar == null) return;
     try {
@@ -247,8 +230,6 @@ class BleNotifier extends StateNotifier<BleState> {
   Future<void> sendCalibrate() => sendCommand(BleCmd.calibrate);
   Future<void> sendStartSession() => sendCommand(BleCmd.startSession);
   Future<void> sendStopSession() => sendCommand(BleCmd.stopSession);
-
-  // ── Auto-Reconnect ────────────────────────────────────────────────────────
 
   int _reconnectAttempts = 0;
 
@@ -268,8 +249,6 @@ class BleNotifier extends StateNotifier<BleState> {
       await _autoReconnect();
     }
   }
-
-  // ── Disconnect ────────────────────────────────────────────────────────────
 
   Future<void> disconnect() async {
     _reconnectAttempts = 99; // prevent auto-reconnect

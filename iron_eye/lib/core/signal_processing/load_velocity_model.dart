@@ -2,11 +2,6 @@ import 'dart:math';
 
 /// e1RM estimator via linear regression on Load-Velocity pairs.
 ///
-/// From 02_ARCHITECTURE.md Part J:
-/// - Model: simple linear regression (velocity vs. load) per exercise per athlete.
-/// - Minimum ≥4 distinct load-velocity pairs before regression is trusted.
-/// - Reports R² alongside e1RM; low R² → flagged as low-confidence.
-/// - NOT called "AI" anywhere — it is a deterministic linear fit.
 class LoadVelocityModel {
   static const int minPoints = 4;
 
@@ -28,8 +23,6 @@ class LoadVelocityModel {
   double? _estimated1rm;
 
   LoadVelocityModel({required this.exercise});
-
-  // ── Data ingestion ─────────────────────────────────────────────────────────
 
   /// Add or update a load-velocity pair (average velocity for a given load).
   void addPoint(double loadKg, double avgVelocity,
@@ -60,8 +53,6 @@ class LoadVelocityModel {
     }
     _recompute();
   }
-
-  // ── Regression ─────────────────────────────────────────────────────────────
 
   void _recompute() {
     if (_pairs.length < minPoints) {
@@ -130,8 +121,6 @@ class LoadVelocityModel {
         if (residuals[i] <= meanRes + 2 * stdRes) pts[i]
     ];
   }
-
-  // ── Results ────────────────────────────────────────────────────────────────
 
   /// Estimated 1RM in kg. Null if fewer than [minPoints] pairs.
   double? get estimated1rm => _estimated1rm;

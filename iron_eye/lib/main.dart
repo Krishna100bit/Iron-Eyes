@@ -9,6 +9,7 @@ import 'features/onboarding/view/onboarding_screen.dart';
 import 'features/dashboard/view/dashboard_screen.dart';
 import 'features/camera_workout/view/workout_screen.dart';
 import 'features/library/view/library_screen.dart';
+import 'features/recovery/view/recovery_screen.dart';
 import 'features/profile/view/profile_screen.dart';
 
 Future<void> main() async {
@@ -57,6 +58,7 @@ class MainNavigationShell extends ConsumerWidget {
     DashboardScreen(),
     WorkoutScreen(),
     LibraryScreen(),
+    RecoveryScreen(),
     ProfileScreen(),
   ];
 
@@ -88,6 +90,11 @@ class MainNavigationShell extends ConsumerWidget {
               icon: Icon(Icons.grid_view_outlined),
               activeIcon: Icon(Icons.grid_view_rounded),
               label: 'Library',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.healing_outlined),
+              activeIcon: Icon(Icons.healing_rounded),
+              label: 'Recovery',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),

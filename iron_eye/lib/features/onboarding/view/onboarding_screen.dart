@@ -168,10 +168,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PAGE 0: WELCOME
-// ─────────────────────────────────────────────────────────────────────────────
 class _WelcomePage extends StatelessWidget {
   final VoidCallback onNext;
   const _WelcomePage({required this.onNext});
@@ -219,10 +216,7 @@ class _WelcomePage extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PAGE 1: NAME
-// ─────────────────────────────────────────────────────────────────────────────
 class _NamePage extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onNext;
@@ -298,10 +292,7 @@ class _NamePage extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PAGE 2: BODY METRICS (age, weight, height, gender)
-// ─────────────────────────────────────────────────────────────────────────────
 class _BodyPage extends StatelessWidget {
   final double age, weight, height;
   final String gender;
@@ -410,10 +401,7 @@ class _BodyPage extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PAGE 3: TRAINING EXPERIENCE
-// ─────────────────────────────────────────────────────────────────────────────
 class _ExperiencePage extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onSelected;
@@ -522,10 +510,7 @@ class _ExperiencePage extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PAGE 4: GOAL SELECTION
-// ─────────────────────────────────────────────────────────────────────────────
 class _GoalPage extends StatelessWidget {
   final String selectedGoal;
   final ValueChanged<String> onGoalSelected;
@@ -619,10 +604,7 @@ class _GoalPage extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // SHARED WIDGETS
-// ─────────────────────────────────────────────────────────────────────────────
 final _titleStyle = GoogleFonts.outfit(
   color: Colors.white,
   fontSize: 30,

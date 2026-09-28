@@ -9,9 +9,6 @@ import '../../../core/models/imu_sample.dart';
 /// Calibration screen — instructs user to "hold bar still", collects
 /// 200 stationary IMU samples, computes gyro bias + initial orientation.
 ///
-/// From 02_ARCHITECTURE.md Step 1:
-/// "Capture N=100-200 stationary samples → mean accel = gravity vector,
-///  mean gyro = gyro bias."
 class CalibrationScreen extends ConsumerStatefulWidget {
   const CalibrationScreen({Key? key}) : super(key: key);
 

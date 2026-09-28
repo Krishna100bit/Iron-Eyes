@@ -21,7 +21,7 @@ class ParsedPacket {
   });
 }
 
-/// Decodes the custom IronLoop BLE packet format defined in 02_ARCHITECTURE.md
+/// Decodes the custom IronLoop BLE packet format 
 ///
 /// Packet layout (bytes):
 ///  0     protocol_version (uint8)
@@ -49,6 +49,23 @@ class BlePacketParser {
 
   /// Parse raw BLE notification bytes. Returns null if the packet is malformed.
   ParsedPacket? parsePacket(List<int> rawBytes) {
+    // Check if it's a 4-byte Status Packet (sent while idle)
+    if (rawBytes.length == 4) {
+      final data = Uint8List.fromList(rawBytes);
+      final bd = ByteData.sublistView(data);
+      final status = data[0];
+      final batteryMv = bd.getUint16(1, Endian.little);
+      
+      return ParsedPacket(
+        sequenceNumber: 0,
+        samples: [],
+        batteryMv: batteryMv,
+        calibrated: (status & 0x01) != 0,
+        lowBattery: (status & 0x02) != 0,
+        sessionActive: (status & 0x04) != 0,
+      );
+    }
+
     if (rawBytes.length < _headerSize + _sampleSize) return null;
 
     final data = Uint8List.fromList(rawBytes);
@@ -87,12 +104,15 @@ class BlePacketParser {
     for (int i = 0; i < sampleCount; i++) {
       if (offset + _sampleSize > data.length - 1) break;
 
-      final ax = bd.getInt16(offset + 0, Endian.little) * _accelScale;
-      final ay = bd.getInt16(offset + 2, Endian.little) * _accelScale;
-      final az = bd.getInt16(offset + 4, Endian.little) * _accelScale;
-      final gx = bd.getInt16(offset + 6, Endian.little) * _gyroScale;
-      final gy = bd.getInt16(offset + 8, Endian.little) * _gyroScale;
-      final gz = bd.getInt16(offset + 10, Endian.little) * _gyroScale;
+      // Firmware sends Accel pre-scaled by 1000 (m/s^2 * 1000)
+      final ax = bd.getInt16(offset + 0, Endian.little) / 1000.0;
+      final ay = bd.getInt16(offset + 2, Endian.little) / 1000.0;
+      final az = bd.getInt16(offset + 4, Endian.little) / 1000.0;
+      
+      // Firmware sends Gyro pre-scaled by 100 (deg/s * 100). Convert to rad/s.
+      final gx = (bd.getInt16(offset + 6, Endian.little) / 100.0) * (pi / 180.0);
+      final gy = (bd.getInt16(offset + 8, Endian.little) / 100.0) * (pi / 180.0);
+      final gz = (bd.getInt16(offset + 10, Endian.little) / 100.0) * (pi / 180.0);
       final dtMs = data[offset + 12];
 
       cumulativeDt += dtMs;
@@ -110,8 +130,8 @@ class BlePacketParser {
       samples: samples,
       batteryMv: batteryMv,
       calibrated: (status & 0x01) != 0,
-      sessionActive: (status & 0x02) != 0,
-      lowBattery: (status & 0x04) != 0,
+      lowBattery: (status & 0x02) != 0,
+      sessionActive: (status & 0x04) != 0,
     );
   }
 

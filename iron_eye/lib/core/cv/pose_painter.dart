@@ -7,67 +7,130 @@ class PosePainter extends CustomPainter {
   final Size absoluteImageSize;
   final InputImageRotation rotation;
   final CameraLensDirection lensDirection;
+  final Map<PoseLandmarkType, Offset>? smoothedLandmarks;
+  final Map<PoseLandmarkType, double>? smoothedLikelihoods;
 
-  PosePainter(this.poses, this.absoluteImageSize, this.rotation, this.lensDirection);
+  PosePainter(
+    this.poses,
+    this.absoluteImageSize,
+    this.rotation,
+    this.lensDirection, {
+    this.smoothedLandmarks,
+    this.smoothedLikelihoods,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    if (poses.isEmpty) return;
+
+    final glowPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..color = const Color(0xFF00E5FF); // Cyber Blue
+      ..strokeWidth = 5.5
+      ..strokeCap = StrokeCap.round;
 
-    final pointPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..strokeWidth = 2.0
-      ..color = Colors.white;
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.6
+      ..strokeCap = StrokeCap.round;
 
-    for (final pose in poses) {
-      pose.landmarks.forEach((_, landmark) {
-        final x = _translateX(landmark.x, rotation, size, absoluteImageSize);
-        final y = _translateY(landmark.y, rotation, size, absoluteImageSize);
-        canvas.drawCircle(Offset(x, y), 5, pointPaint);
-      });
+    final jointHaloPaint = Paint()
+      ..style = PaintingStyle.fill;
 
-      void paintLine(PoseLandmarkType type1, PoseLandmarkType type2) {
-        final joint1 = pose.landmarks[type1];
-        final joint2 = pose.landmarks[type2];
-        if (joint1 != null && joint2 != null && joint1.likelihood > 0.6 && joint2.likelihood > 0.6) {
-          final x1 = _translateX(joint1.x, rotation, size, absoluteImageSize);
-          final y1 = _translateY(joint1.y, rotation, size, absoluteImageSize);
-          final x2 = _translateX(joint2.x, rotation, size, absoluteImageSize);
-          final y2 = _translateY(joint2.y, rotation, size, absoluteImageSize);
-          canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
-        }
+    final jointDotPaint = Paint()
+      ..style = PaintingStyle.fill;
+
+    final pose = poses.first;
+
+    void paintLine(PoseLandmarkType type1, PoseLandmarkType type2) {
+      final pos1 = smoothedLandmarks?[type1] ??
+          (pose.landmarks[type1] != null ? Offset(pose.landmarks[type1]!.x, pose.landmarks[type1]!.y) : null);
+      final pos2 = smoothedLandmarks?[type2] ??
+          (pose.landmarks[type2] != null ? Offset(pose.landmarks[type2]!.x, pose.landmarks[type2]!.y) : null);
+      final conf1 = smoothedLikelihoods?[type1] ?? pose.landmarks[type1]?.likelihood ?? 0.0;
+      final conf2 = smoothedLikelihoods?[type2] ?? pose.landmarks[type2]?.likelihood ?? 0.0;
+
+      if (pos1 != null && pos2 != null && conf1 >= 0.35 && conf2 >= 0.35) {
+        final x1 = _translateX(pos1.dx, rotation, size, absoluteImageSize);
+        final y1 = _translateY(pos1.dy, rotation, size, absoluteImageSize);
+        final x2 = _translateX(pos2.dx, rotation, size, absoluteImageSize);
+        final y2 = _translateY(pos2.dy, rotation, size, absoluteImageSize);
+
+        final avgConf = (conf1 + conf2) / 2.0;
+        final alpha = (avgConf * 0.85 + 0.15).clamp(0.25, 1.0);
+
+        // Cyber neon glow outer stroke
+        glowPaint.color = const Color(0xFF00E5FF).withOpacity(alpha * 0.35);
+        canvas.drawLine(Offset(x1, y1), Offset(x2, y2), glowPaint);
+
+        // Solid inner core stroke
+        linePaint.color = const Color(0xFF00E5FF).withOpacity(alpha);
+        canvas.drawLine(Offset(x1, y1), Offset(x2, y2), linePaint);
       }
+    }
 
-      // Draw arms
-      paintLine(PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow);
-      paintLine(PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist);
-      paintLine(PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow);
-      paintLine(PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist);
+    // Connect anatomical skeletal bones:
+    // Upper body / arms
+    paintLine(PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow);
+    paintLine(PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist);
+    paintLine(PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow);
+    paintLine(PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist);
 
-      // Draw body
-      paintLine(PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder);
-      paintLine(PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip);
-      paintLine(PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip);
-      paintLine(PoseLandmarkType.leftHip, PoseLandmarkType.rightHip);
+    // Torso box
+    paintLine(PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder);
+    paintLine(PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip);
+    paintLine(PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip);
+    paintLine(PoseLandmarkType.leftHip, PoseLandmarkType.rightHip);
 
-      // Draw legs
-      paintLine(PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee);
-      paintLine(PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
-      paintLine(PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee);
-      paintLine(PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle);
+    // Lower body / legs
+    paintLine(PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee);
+    paintLine(PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
+    paintLine(PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee);
+    paintLine(PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle);
+
+    // Draw primary structural joints
+    const keyJoints = [
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.rightShoulder,
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.rightElbow,
+      PoseLandmarkType.leftWrist,
+      PoseLandmarkType.rightWrist,
+      PoseLandmarkType.leftHip,
+      PoseLandmarkType.rightHip,
+      PoseLandmarkType.leftKnee,
+      PoseLandmarkType.rightKnee,
+      PoseLandmarkType.leftAnkle,
+      PoseLandmarkType.rightAnkle,
+    ];
+
+    for (final jointType in keyJoints) {
+      final pos = smoothedLandmarks?[jointType] ??
+          (pose.landmarks[jointType] != null ? Offset(pose.landmarks[jointType]!.x, pose.landmarks[jointType]!.y) : null);
+      final conf = smoothedLikelihoods?[jointType] ?? pose.landmarks[jointType]?.likelihood ?? 0.0;
+
+      if (pos != null && conf >= 0.35) {
+        final x = _translateX(pos.dx, rotation, size, absoluteImageSize);
+        final y = _translateY(pos.dy, rotation, size, absoluteImageSize);
+        final alpha = (conf * 0.8 + 0.2).clamp(0.3, 1.0);
+
+        // Outer cyber cyan halo
+        jointHaloPaint.color = const Color(0xFF00E5FF).withOpacity(alpha * 0.45);
+        canvas.drawCircle(Offset(x, y), 5.5, jointHaloPaint);
+
+        // Crisp white core
+        jointDotPaint.color = Colors.white.withOpacity(alpha);
+        canvas.drawCircle(Offset(x, y), 2.5, jointDotPaint);
+      }
     }
   }
 
   @override
   bool shouldRepaint(covariant PosePainter oldDelegate) {
-    return oldDelegate.absoluteImageSize != absoluteImageSize ||
-           oldDelegate.poses != poses;
+    return true;
   }
 
   double _translateX(double x, InputImageRotation rotation, Size size, Size absoluteImageSize) {
+    if (absoluteImageSize.width == 0 || absoluteImageSize.height == 0) return x;
     double scaledX = 0;
     switch (rotation) {
       case InputImageRotation.rotation90deg:
@@ -81,6 +144,7 @@ class PosePainter extends CustomPainter {
   }
 
   double _translateY(double y, InputImageRotation rotation, Size size, Size absoluteImageSize) {
+    if (absoluteImageSize.width == 0 || absoluteImageSize.height == 0) return y;
     switch (rotation) {
       case InputImageRotation.rotation90deg:
       case InputImageRotation.rotation270deg:

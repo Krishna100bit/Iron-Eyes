@@ -56,8 +56,6 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen>
       ),
     );
   }
-
-  // ── Header ─────────────────────────────────────────────────────────────────
   Widget _buildHeader(
       BuildContext context, BleState ble, BleNotifier notifier) {
     return Padding(
@@ -118,7 +116,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen>
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  ble.isConnected ? 'Connected' : 'Disconnected',
+                  ble.isConnected ? 'Connected • 🔋 ${ble.batteryPercent}%' : 'Disconnected',
                   style: GoogleFonts.outfit(
                     color: ble.isConnected ? AppTheme.primary : Colors.white54,
                     fontSize: 11,
@@ -132,8 +130,6 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen>
       ),
     );
   }
-
-  // ── Scan View ──────────────────────────────────────────────────────────────
   Widget _buildScanView(BleState ble, BleNotifier notifier) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -241,8 +237,6 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen>
       ),
     );
   }
-
-  // ── Connected View ─────────────────────────────────────────────────────────
   Widget _buildConnectedCard(BleState ble, BleNotifier notifier) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -270,61 +264,17 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen>
                         color: Colors.white38, fontSize: 11)),
                 const SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _InfoChip(
-                      label: 'Battery',
+                      label: 'Battery Life',
                       value: '${ble.batteryPercent}%',
                       icon: _batteryIcon(ble.batteryPercent),
                       color: ble.batteryPercent < 20
                           ? Colors.red
                           : AppTheme.primary,
                     ),
-                    _InfoChip(
-                      label: 'Packet Loss',
-                      value:
-                          '${ble.packetLossPercent.toStringAsFixed(1)}%',
-                      icon: Icons.wifi_outlined,
-                      color: ble.packetLossPercent > 5
-                          ? Colors.orange
-                          : AppTheme.primary,
-                    ),
-                    _InfoChip(
-                      label: 'Calibrated',
-                      value: ble.isDeviceCalibrated ? 'Yes' : 'No',
-                      icon: ble.isDeviceCalibrated
-                          ? Icons.check_circle_rounded
-                          : Icons.error_outline_rounded,
-                      color: ble.isDeviceCalibrated
-                          ? AppTheme.primary
-                          : Colors.orange,
-                    ),
                   ],
-                ),
-                const SizedBox(height: 20),
-
-                // Calibrate button
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const CalibrationScreen()),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF00B0FF)]),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text('🎯  Calibrate Sensor',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.outfit(
-                            color: Colors.black,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold)),
-                  ),
                 ),
                 const SizedBox(height: 10),
 
@@ -364,8 +314,6 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen>
     return Icons.battery_1_bar_rounded;
   }
 }
-
-// ── Device Tile ───────────────────────────────────────────────────────────────
 class _DeviceTile extends StatelessWidget {
   final ScanResult result;
   final BleNotifier notifier;

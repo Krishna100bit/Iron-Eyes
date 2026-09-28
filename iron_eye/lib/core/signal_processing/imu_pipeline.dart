@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import '../models/imu_sample.dart';
 import 'orientation_filter.dart';
 import 'gravity_removal.dart';
@@ -9,16 +10,6 @@ export 'rep_detector.dart' show RepEvent;
 
 /// Orchestrates the full signal processing pipeline for one exercise session.
 ///
-/// Data flow (per sample, from 02_ARCHITECTURE.md Part D):
-///   ImuSample → OrientationFilter → GravityRemoval → ZuptIntegrator
-///               → RepDetector → RepEvent
-///
-/// Usage:
-///   1. Call [calibrate] with stationary samples to set gyro bias + orientation.
-///   2. Call [processSample] for each incoming IMU sample during the session.
-///   3. Listen to [velocityStream] for real-time velocity (for live gauge).
-///   4. Listen to [repStream] for completed rep events (to call addRep).
-///   5. Call [reset] between sets if desired, or [dispose] when session ends.
 class ImuPipeline {
   final OrientationFilter _orientation = OrientationFilter();
   final ZuptIntegrator _zupt = ZuptIntegrator();
@@ -42,8 +33,6 @@ class ImuPipeline {
     );
   }
 
-  // ── Calibration ───────────────────────────────────────────────────────────
-
   /// Feed N stationary samples captured during the calibration command.
   /// Typically 100-200 samples (~1-2 seconds at 100Hz).
   void calibrate(List<ImuSample> staticSamples) {
@@ -56,8 +45,6 @@ class ImuPipeline {
   }
 
   bool get isCalibrated => _orientation.isCalibrated;
-
-  // ── Processing ────────────────────────────────────────────────────────────
 
   /// Process a single IMU sample through the full pipeline.
   void processSample(ImuSample sample) {
@@ -80,8 +67,9 @@ class ImuPipeline {
     final worldAz = _orientation.worldAccelZ(sample.ax, sample.ay, sample.az);
     final linearAz = GravityRemoval.removeGravityVertical(worldAz);
 
-    // 3. ZUPT-constrained velocity integration
-    final velocity = _zupt.update(linearAz, dt);
+    // 3. ZUPT-constrained velocity integration with gyro fusion
+    final gyroMag = math.sqrt(sample.gx * sample.gx + sample.gy * sample.gy + sample.gz * sample.gz);
+    final velocity = _zupt.update(linearAz, dt, gyroMag: gyroMag);
     _velocityController.add(velocity);
 
     // 4. Rep detection
@@ -90,6 +78,7 @@ class ImuPipeline {
       _zupt.displacementM,
       _zupt.isStationary,
       DateTime.fromMillisecondsSinceEpoch(sample.timestampMs),
+      dt: dt,
     );
   }
 
@@ -112,9 +101,11 @@ class ImuPipeline {
     _velocityController.close();
     _repController.close();
   }
-
-  // ── Live state ────────────────────────────────────────────────────────────
   double get currentVelocity => _zupt.velocity;
   bool get isStationary => _zupt.isStationary;
   int get repCount => _repDetector.repCount;
+
+  RepEvent? getAndConsumeLatestRepEvent() => _repDetector.getAndConsumeLatestRepEvent();
+  RepEvent? getActiveConcentricMetrics() => _repDetector.getActiveConcentricMetrics();
+  RepEvent? get lastCompletedRepEvent => _repDetector.lastCompletedRepEvent;
 }

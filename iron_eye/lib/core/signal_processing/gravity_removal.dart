@@ -1,10 +1,6 @@
 /// Removes Earth's gravity from a body-frame acceleration vector using the
 /// orientation estimated by [OrientationFilter].
 ///
-/// Algorithm (from 02_ARCHITECTURE.md Step 4):
-///   1. Rotate body-frame acceleration into world frame using current quaternion.
-///   2. Subtract [0, 0, 9.81] — gravity acts on the world Z axis.
-///   Result = linear acceleration (motion-only, gravity-free).
 class GravityRemoval {
   static const double _g = 9.80665; // m/s²
 

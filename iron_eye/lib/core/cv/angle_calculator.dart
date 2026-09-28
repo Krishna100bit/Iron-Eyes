@@ -11,8 +11,8 @@ class AngleCalculator {
     return deg;
   }
 
-  // Squat specific heuristics
-  // Uses Hip, Knee, Ankle angle to determine depth
+  // Evaluates knee angles independently per leg.
+  // Filters out low-confidence landmarks (min 0.40) to eliminate noise spikes.
   static double? calculateKneeAngle(Pose pose) {
     final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
     final leftKnee = pose.landmarks[PoseLandmarkType.leftKnee];
@@ -22,29 +22,68 @@ class AngleCalculator {
     final rightKnee = pose.landmarks[PoseLandmarkType.rightKnee];
     final rightAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
 
-    if (leftHip == null || leftKnee == null || leftAnkle == null ||
-        rightHip == null || rightKnee == null || rightAnkle == null) {
-      return null;
-    }
+    final bool leftValid = leftHip != null && leftKnee != null && leftAnkle != null &&
+        leftHip.likelihood >= 0.40 && leftKnee.likelihood >= 0.40 && leftAnkle.likelihood >= 0.40;
+    final bool rightValid = rightHip != null && rightKnee != null && rightAnkle != null &&
+        rightHip.likelihood >= 0.40 && rightKnee.likelihood >= 0.40 && rightAnkle.likelihood >= 0.40;
 
-    final leftConfidence = (leftHip.likelihood + leftKnee.likelihood + leftAnkle.likelihood) / 3;
-    final rightConfidence = (rightHip.likelihood + rightKnee.likelihood + rightAnkle.likelihood) / 3;
+    if (!leftValid && !rightValid) return null;
 
-    if (math.max(leftConfidence, rightConfidence) < 0.45) return null;
+    final double? leftAngle = leftValid
+        ? calculateAngle(leftHip!, leftKnee!, leftAnkle!)
+        : null;
+    final double? rightAngle = rightValid
+        ? calculateAngle(rightHip!, rightKnee!, rightAnkle!)
+        : null;
 
-    if (leftConfidence >= 0.45 && rightConfidence >= 0.45) {
-      final leftAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-      final rightAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
-      // Take the maximum angle: This forces BOTH knees to bend to register depth (prevents 1-leg raises)
-      return math.max(leftAngle, rightAngle);
-    } else if (leftConfidence > rightConfidence) {
-      return calculateAngle(leftHip, leftKnee, leftAnkle);
+    if (leftAngle != null && rightAngle != null) {
+      if ((leftAngle - rightAngle).abs() <= 25.0) {
+        return (leftAngle + rightAngle) / 2.0;
+      } else {
+        return math.min(leftAngle, rightAngle);
+      }
+    } else if (leftAngle != null) {
+      return leftAngle;
     } else {
-      return calculateAngle(rightHip, rightKnee, rightAnkle);
+      return rightAngle;
     }
   }
 
-  // Uses Shoulder, Hip, Knee angle to determine torso lean
+  // Calculates thigh inclination angle relative to horizontal.
+  // Serves as an infallible biomechanical fallback when ankles are cropped or occluded by dumbbells.
+  // Standing: Thigh is vertical (~85°) -> maps to ~175° equivalent knee angle.
+  // Parallel Squat: Thigh is horizontal (~10-15°) -> maps to ~100-105° equivalent knee angle.
+  static double? calculateThighAngle(Pose pose) {
+    final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
+    final leftKnee = pose.landmarks[PoseLandmarkType.leftKnee];
+    final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
+    final rightKnee = pose.landmarks[PoseLandmarkType.rightKnee];
+
+    final bool leftValid = leftHip != null && leftKnee != null &&
+        leftHip.likelihood >= 0.42 && leftKnee.likelihood >= 0.42;
+    final bool rightValid = rightHip != null && rightKnee != null &&
+        rightHip.likelihood >= 0.42 && rightKnee.likelihood >= 0.42;
+
+    if (!leftValid && !rightValid) return null;
+
+    double computeThighEqAngle(PoseLandmark hip, PoseLandmark knee) {
+      final dx = (knee.x - hip.x).abs();
+      final dy = math.max(0.0, knee.y - hip.y);
+      final rad = math.atan2(dy, dx);
+      final degFromHoriz = rad * 180.0 / math.pi;
+      return 90.0 + degFromHoriz;
+    }
+
+    final double? leftEq = leftValid ? computeThighEqAngle(leftHip!, leftKnee!) : null;
+    final double? rightEq = rightValid ? computeThighEqAngle(rightHip!, rightKnee!) : null;
+
+    if (leftEq != null && rightEq != null) {
+      return (leftEq + rightEq) / 2.0;
+    }
+    return leftEq ?? rightEq;
+  }
+
+  // Uses Shoulder, Hip, Knee angle to determine torso/hip flexion (used for form assessment)
   static double calculateHipAngle(Pose pose) {
     final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
     final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
@@ -54,19 +93,53 @@ class AngleCalculator {
     final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
     final rightKnee = pose.landmarks[PoseLandmarkType.rightKnee];
 
-    if (leftShoulder == null || leftHip == null || leftKnee == null ||
-        rightShoulder == null || rightHip == null || rightKnee == null) {
-      return 180.0;
-    }
+    final bool leftValid = leftShoulder != null && leftHip != null && leftKnee != null &&
+        leftShoulder.likelihood >= 0.35 && leftHip.likelihood >= 0.35 && leftKnee.likelihood >= 0.35;
+    final bool rightValid = rightShoulder != null && rightHip != null && rightKnee != null &&
+        rightShoulder.likelihood >= 0.35 && rightHip.likelihood >= 0.35 && rightKnee.likelihood >= 0.35;
 
-    final leftConfidence = (leftShoulder.likelihood + leftHip.likelihood + leftKnee.likelihood) / 3;
-    final rightConfidence = (rightShoulder.likelihood + rightHip.likelihood + rightKnee.likelihood) / 3;
+    if (!leftValid && !rightValid) return 180.0;
 
-    if (leftConfidence > rightConfidence) {
-      return calculateAngle(leftShoulder, leftHip, leftKnee);
-    } else {
-      return calculateAngle(rightShoulder, rightHip, rightKnee);
+    if (leftValid && rightValid) {
+      final leftAngle = calculateAngle(leftShoulder!, leftHip!, leftKnee!);
+      final rightAngle = calculateAngle(rightShoulder!, rightHip!, rightKnee!);
+      return (leftAngle + rightAngle) / 2.0;
+    } else if (leftValid) {
+      return calculateAngle(leftShoulder!, leftHip!, leftKnee!);
+    } else if (rightValid) {
+      return calculateAngle(rightShoulder!, rightHip!, rightKnee!);
     }
+    return 180.0;
+  }
+
+  // Comprehensive squat angle evaluator.
+  // 1. Tries 3-point knee angle if ankles are clearly detected.
+  // 2. Falls back to thigh inclination (hip to knee angle) if ankles are occluded.
+  static double? calculateSquatAngle(Pose pose) {
+    final kneeAngle = calculateKneeAngle(pose);
+    if (kneeAngle != null) return kneeAngle;
+
+    final thighAngle = calculateThighAngle(pose);
+    if (thighAngle != null) return thighAngle;
+
+    return null;
+  }
+
+  // Normalized Y position of hips
+  static double? getHipY(Pose pose) {
+    final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
+    final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
+    final bool leftValid = leftHip != null && leftHip.likelihood >= 0.35;
+    final bool rightValid = rightHip != null && rightHip.likelihood >= 0.35;
+
+    if (leftValid && rightValid) {
+      return (leftHip!.y + rightHip!.y) / 2.0;
+    } else if (leftValid) {
+      return leftHip!.y;
+    } else if (rightValid) {
+      return rightHip!.y;
+    }
+    return null;
   }
 
   // Uses Shoulder, Elbow, Wrist angle to determine arm extension
@@ -79,44 +152,62 @@ class AngleCalculator {
     final rightElbow = pose.landmarks[PoseLandmarkType.rightElbow];
     final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
 
-    if (leftShoulder == null || leftElbow == null || leftWrist == null ||
-        rightShoulder == null || rightElbow == null || rightWrist == null) {
-      return null;
+    final bool leftValid = leftShoulder != null && leftElbow != null && leftWrist != null &&
+        leftShoulder.likelihood >= 0.38 && leftElbow.likelihood >= 0.38 && leftWrist.likelihood >= 0.38;
+    final bool rightValid = rightShoulder != null && rightElbow != null && rightWrist != null &&
+        rightShoulder.likelihood >= 0.38 && rightElbow.likelihood >= 0.38 && rightWrist.likelihood >= 0.38;
+
+    if (!leftValid && !rightValid) return null;
+
+    if (leftValid && rightValid) {
+      final leftAngle = calculateAngle(leftShoulder!, leftElbow!, leftWrist!);
+      final rightAngle = calculateAngle(rightShoulder!, rightElbow!, rightWrist!);
+      return (leftAngle + rightAngle) / 2.0;
+    } else if (leftValid) {
+      return calculateAngle(leftShoulder!, leftElbow!, leftWrist!);
+    } else if (rightValid) {
+      return calculateAngle(rightShoulder!, rightElbow!, rightWrist!);
     }
+    return null;
+  }
 
-    final leftConfidence = (leftShoulder.likelihood + leftElbow.likelihood + leftWrist.likelihood) / 3;
-    final rightConfidence = (rightShoulder.likelihood + rightElbow.likelihood + rightWrist.likelihood) / 3;
+  // Evaluates asymmetric extension (injury risk for bench press)
+  static double? checkElbowAsymmetry(Pose pose) {
+    final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final leftElbow = pose.landmarks[PoseLandmarkType.leftElbow];
+    final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist];
 
-    if (math.max(leftConfidence, rightConfidence) < 0.45) return null;
+    final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    final rightElbow = pose.landmarks[PoseLandmarkType.rightElbow];
+    final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
 
-    if (leftConfidence > rightConfidence) {
-      return calculateAngle(leftShoulder, leftElbow, leftWrist);
-    } else {
-      return calculateAngle(rightShoulder, rightElbow, rightWrist);
+    final bool leftValid = leftShoulder != null && leftElbow != null && leftWrist != null &&
+        leftShoulder.likelihood >= 0.38 && leftElbow.likelihood >= 0.38 && leftWrist.likelihood >= 0.38;
+    final bool rightValid = rightShoulder != null && rightElbow != null && rightWrist != null &&
+        rightShoulder.likelihood >= 0.38 && rightElbow.likelihood >= 0.38 && rightWrist.likelihood >= 0.38;
+
+    if (leftValid && rightValid) {
+      final leftAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+      final rightAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+      return (leftAngle - rightAngle).abs();
     }
+    return null;
   }
 
   static bool isValidHuman(Pose pose) {
     final nose = pose.landmarks[PoseLandmarkType.nose];
     final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
     final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
+    final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
 
-    if (nose == null || leftShoulder == null || rightShoulder == null) {
-      return false;
-    }
+    final hasUpperTorso = (leftShoulder != null && leftShoulder.likelihood >= 0.35) ||
+                          (rightShoulder != null && rightShoulder.likelihood >= 0.35);
+    final hasMidTorso = (leftHip != null && leftHip.likelihood >= 0.35) ||
+                        (rightHip != null && rightHip.likelihood >= 0.35) ||
+                        (nose != null && nose.likelihood >= 0.35);
 
-    // A real human should have at least ONE major upper body landmark with decent confidence.
-    // If you look away, the nose drops but shoulders remain. If you face the floor, the nose drops.
-    final maxConfidence = math.max(
-      nose.likelihood,
-      math.max(leftShoulder.likelihood, rightShoulder.likelihood)
-    );
-
-    if (maxConfidence < 0.4) {
-      return false;
-    }
-
-    return true;
+    return hasUpperTorso && hasMidTorso;
   }
 
   // Uses human proportions and camera perspective to determine if the user is standing upright.
@@ -125,23 +216,25 @@ class AngleCalculator {
     final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
     final hip = pose.landmarks[PoseLandmarkType.leftHip] ?? pose.landmarks[PoseLandmarkType.rightHip];
 
-    if (leftShoulder == null || rightShoulder == null || hip == null) {
-      return false; // Not enough info, assume false to not block reps
+    if ((leftShoulder == null && rightShoulder == null) || hip == null) {
+      return false;
     }
 
-    final shoulderWidth = (leftShoulder.x - rightShoulder.x).abs();
-    final avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-    final dy = (avgShoulderY - hip.y).abs();
+    final shoulderY = leftShoulder != null && rightShoulder != null
+        ? (leftShoulder.y + rightShoulder.y) / 2.0
+        : (leftShoulder?.y ?? rightShoulder!.y);
 
-    // Prevent division by zero if shoulders overlap (standing sideways)
-    if (shoulderWidth < 5) return true; 
+    final dy = hip.y - shoulderY;
+    if (dy < 20) return false;
 
-    // A standing human's vertical torso length (dy) is typically 1.5x to 2x their shoulder width.
-    // In a push-up or bench press, perspective foreshortening (front view) or horizontal layout (side view) 
-    // makes dy much smaller relative to shoulder width.
-    if (dy > shoulderWidth * 1.5) {
+    if (leftShoulder != null && rightShoulder != null) {
+      final shoulderWidth = (leftShoulder.x - rightShoulder.x).abs();
+      if (shoulderWidth < 10) return true;
+      if (dy > shoulderWidth * 0.9) return true;
+    } else {
       return true;
     }
+
     return false;
   }
 }

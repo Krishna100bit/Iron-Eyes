@@ -20,6 +20,7 @@ class RepCard {
   });
 
   String get formGrade {
+    if (formScore <= 0) return '—';
     if (formScore >= 90) return 'A';
     if (formScore >= 80) return 'B';
     if (formScore >= 70) return 'C';

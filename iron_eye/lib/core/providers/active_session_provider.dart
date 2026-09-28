@@ -2,8 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/rep_card.dart';
 import '../models/set_record.dart';
 import '../models/workout_session.dart';
-
-// ── Active Session State ───────────────────────────────────────────────────────
 class ActiveSessionState {
   final bool isActive;
   final String exercise;
@@ -27,8 +25,6 @@ class ActiveSessionState {
     this.targetRpe,
   });
 
-  // ── Derived values ─────────────────────────────────────────────────────────
-
   int get currentSetNumber => completedSets.length + 1;
   int get currentRepCount => currentSetReps.length;
 
@@ -40,13 +36,14 @@ class ActiveSessionState {
   int get totalReps => allReps.length;
 
   int get avgFormScore {
-    final all = allReps;
-    if (all.isEmpty) return 0;
-    return (all.fold<int>(0, (s, r) => s + r.formScore) / all.length).round();
+    final validReps = allReps.where((r) => r.formScore > 0).toList();
+    if (validReps.isEmpty) return 0;
+    return (validReps.fold<int>(0, (s, r) => s + r.formScore) / validReps.length).round();
   }
 
   String get avgFormGrade {
     final s = avgFormScore;
+    if (s <= 0) return '—';
     if (s >= 90) return 'A';
     if (s >= 80) return 'B';
     if (s >= 70) return 'C';
@@ -97,8 +94,6 @@ class ActiveSessionState {
         targetRpe: targetRpe ?? this.targetRpe,
       );
 }
-
-// ── Notifier ───────────────────────────────────────────────────────────────────
 class ActiveSessionNotifier extends StateNotifier<ActiveSessionState?> {
   ActiveSessionNotifier() : super(null);
 
@@ -160,11 +155,6 @@ class ActiveSessionNotifier extends StateNotifier<ActiveSessionState?> {
     if (state == null) return null;
 
     if (state!.currentSetReps.isNotEmpty) completeSet();
-
-    if (state!.allReps.isEmpty) {
-      state = null;
-      return null;
-    }
 
     final session = WorkoutSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
